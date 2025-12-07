@@ -4,6 +4,7 @@ import { CountTokensUseCase } from '../count-tokens.use-case.js';
 import type { IGeminiClient } from '../../ports/index.js';
 import { ValidationError } from '../../../shared/errors/index.js';
 import { GeminiApiError } from '../../errors/index.js';
+import { TEST_MODEL, TEST_MODEL_ALT } from '../../../config/models.config.test-utils.js';
 
 describe('CountTokensUseCase', () => {
   let mockGeminiClient: jest.Mocked<IGeminiClient>;
@@ -24,9 +25,9 @@ describe('CountTokensUseCase', () => {
 
   describe('execute', () => {
     it('should_returnSuccess_when_validText', async () => {
-      const input = { text: 'Hello, world!', model: 'gemini-1.5-pro' };
+      const input = { text: 'Hello, world!', model: TEST_MODEL };
       mockGeminiClient.countTokens.mockResolvedValue(
-        ok({ totalTokens: 4, model: 'gemini-1.5-pro' }),
+        ok({ totalTokens: 4, model: TEST_MODEL }),
       );
 
       const result = await useCase.execute(input);
@@ -34,12 +35,12 @@ describe('CountTokensUseCase', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.totalTokens).toBe(4);
-        expect(result.value.model).toBe('gemini-1.5-pro');
+        expect(result.value.model).toBe(TEST_MODEL);
       }
     });
 
     it('should_returnError_when_emptyText', async () => {
-      const input = { text: '   ', model: 'gemini-1.5-pro' };
+      const input = { text: '   ', model: TEST_MODEL };
 
       const result = await useCase.execute(input);
 
@@ -52,7 +53,7 @@ describe('CountTokensUseCase', () => {
     });
 
     it('should_returnError_when_apiCallFails', async () => {
-      const input = { text: 'Hello', model: 'gemini-1.5-pro' };
+      const input = { text: 'Hello', model: TEST_MODEL };
       const apiError = new GeminiApiError('API unavailable');
       mockGeminiClient.countTokens.mockResolvedValue(err(apiError));
 
@@ -65,20 +66,20 @@ describe('CountTokensUseCase', () => {
     });
 
     it('should_passCorrectParametersToClient', async () => {
-      const input = { text: 'Test text', model: 'gemini-1.5-flash' };
+      const input = { text: 'Test text', model: TEST_MODEL_ALT };
       mockGeminiClient.countTokens.mockResolvedValue(
-        ok({ totalTokens: 2, model: 'gemini-1.5-flash' }),
+        ok({ totalTokens: 2, model: TEST_MODEL_ALT }),
       );
 
       await useCase.execute(input);
 
-      expect(mockGeminiClient.countTokens).toHaveBeenCalledWith('Test text', 'gemini-1.5-flash');
+      expect(mockGeminiClient.countTokens).toHaveBeenCalledWith('Test text', TEST_MODEL_ALT);
     });
 
     it('should_handleLargeTokenCounts', async () => {
-      const input = { text: 'Large text'.repeat(1000), model: 'gemini-1.5-pro' };
+      const input = { text: 'Large text'.repeat(1000), model: TEST_MODEL };
       mockGeminiClient.countTokens.mockResolvedValue(
-        ok({ totalTokens: 10000, model: 'gemini-1.5-pro' }),
+        ok({ totalTokens: 10000, model: TEST_MODEL }),
       );
 
       const result = await useCase.execute(input);

@@ -1,4 +1,5 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { DEFAULT_MODEL, MODEL_OPTIONS_DESCRIPTION } from '../../../config/index.js';
 
 export const countTokensTool: Tool = {
   name: 'count_gemini_tokens',
@@ -19,8 +20,8 @@ Use this tool to:
       },
       model: {
         type: 'string',
-        description: 'The model to use for tokenization',
-        default: 'gemini-1.5-pro',
+        description: `The model to use for tokenization. ${MODEL_OPTIONS_DESCRIPTION}`,
+        default: DEFAULT_MODEL,
       },
     },
     required: ['text'],

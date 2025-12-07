@@ -4,6 +4,11 @@ import { ListModelsUseCase } from '../list-models.use-case.js';
 import type { IGeminiClient } from '../../ports/index.js';
 import type { GeminiModel } from '../../entities/index.js';
 import { GeminiApiError } from '../../errors/index.js';
+import {
+  FIRST_MODEL,
+  SECOND_MODEL,
+  createMockModelList,
+} from '../../../config/models.config.test-utils.js';
 
 describe('ListModelsUseCase', () => {
   let mockGeminiClient: jest.Mocked<IGeminiClient>;
@@ -24,24 +29,7 @@ describe('ListModelsUseCase', () => {
 
   describe('execute', () => {
     it('should_returnSuccess_when_modelsAvailable', async () => {
-      const mockModels: readonly GeminiModel[] = [
-        {
-          name: 'gemini-1.5-pro',
-          displayName: 'Gemini 1.5 Pro',
-          description: 'Most capable model',
-          inputTokenLimit: 1048576,
-          outputTokenLimit: 8192,
-          supportedGenerationMethods: ['generateContent'],
-        },
-        {
-          name: 'gemini-1.5-flash',
-          displayName: 'Gemini 1.5 Flash',
-          description: 'Fast model',
-          inputTokenLimit: 1048576,
-          outputTokenLimit: 8192,
-          supportedGenerationMethods: ['generateContent'],
-        },
-      ];
+      const mockModels = createMockModelList(2);
       mockGeminiClient.listModels.mockResolvedValue(ok(mockModels));
 
       const result = await useCase.execute();
@@ -50,21 +38,12 @@ describe('ListModelsUseCase', () => {
       if (result.isOk()) {
         expect(result.value.count).toBe(2);
         expect(result.value.models).toHaveLength(2);
-        expect(result.value.models[0]?.name).toBe('gemini-1.5-pro');
+        expect(result.value.models[0]?.name).toBe(FIRST_MODEL?.name);
       }
     });
 
     it('should_returnSummariesOnly', async () => {
-      const mockModels: readonly GeminiModel[] = [
-        {
-          name: 'gemini-1.5-pro',
-          displayName: 'Gemini 1.5 Pro',
-          description: 'Most capable model',
-          inputTokenLimit: 1048576,
-          outputTokenLimit: 8192,
-          supportedGenerationMethods: ['generateContent'],
-        },
-      ];
+      const mockModels = createMockModelList(1);
       mockGeminiClient.listModels.mockResolvedValue(ok(mockModels));
 
       const result = await useCase.execute();
@@ -73,9 +52,9 @@ describe('ListModelsUseCase', () => {
       if (result.isOk()) {
         const summary = result.value.models[0];
         expect(summary).toEqual({
-          name: 'gemini-1.5-pro',
-          displayName: 'Gemini 1.5 Pro',
-          description: 'Most capable model',
+          name: FIRST_MODEL?.name,
+          displayName: FIRST_MODEL?.displayName,
+          description: FIRST_MODEL?.description,
         });
         // Should not include inputTokenLimit, outputTokenLimit, etc.
         expect(summary).not.toHaveProperty('inputTokenLimit');

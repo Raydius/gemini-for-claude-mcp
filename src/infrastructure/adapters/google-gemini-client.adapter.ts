@@ -2,12 +2,12 @@ import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai'
 import { type Result, ok, err } from 'neverthrow';
 import type { IGeminiClient } from '../../domain/ports/index.js';
 import type {
+  GeminiModel,
   GeminiPrompt,
   GeminiPromptWithHistory,
   GeminiResponse,
   GeminiStreamChunk,
   TokenCountResult,
-  GeminiModel,
 } from '../../domain/entities/index.js';
 import type { DomainError } from '../../shared/errors/index.js';
 import { ExternalServiceError, TimeoutError } from '../../shared/errors/index.js';
@@ -18,33 +18,7 @@ import {
   GeminiModelNotFoundError,
 } from '../../domain/errors/index.js';
 import type { ILogger } from '../../shared/logger/index.js';
-
-const KNOWN_MODELS: readonly GeminiModel[] = [
-  {
-    name: 'gemini-1.5-pro',
-    displayName: 'Gemini 1.5 Pro',
-    description: 'Most capable model for complex reasoning tasks',
-    inputTokenLimit: 1048576,
-    outputTokenLimit: 8192,
-    supportedGenerationMethods: ['generateContent'],
-  },
-  {
-    name: 'gemini-1.5-flash',
-    displayName: 'Gemini 1.5 Flash',
-    description: 'Fast and efficient for most tasks',
-    inputTokenLimit: 1048576,
-    outputTokenLimit: 8192,
-    supportedGenerationMethods: ['generateContent'],
-  },
-  {
-    name: 'gemini-1.0-pro',
-    displayName: 'Gemini 1.0 Pro',
-    description: 'Balanced performance and capability',
-    inputTokenLimit: 30720,
-    outputTokenLimit: 2048,
-    supportedGenerationMethods: ['generateContent'],
-  },
-];
+import { GEMINI_MODELS } from '../../config/index.js';
 
 export class GoogleGeminiClientAdapter implements IGeminiClient {
   private readonly client: GoogleGenerativeAI;
@@ -144,11 +118,11 @@ export class GoogleGeminiClientAdapter implements IGeminiClient {
   }
 
   async listModels(): Promise<Result<readonly GeminiModel[], DomainError>> {
-    return ok(KNOWN_MODELS);
+    return ok(GEMINI_MODELS);
   }
 
   async getModel(modelName: string): Promise<Result<GeminiModel, DomainError>> {
-    const model = KNOWN_MODELS.find((m) => m.name === modelName);
+    const model = GEMINI_MODELS.find((m) => m.name === modelName);
     if (model === undefined) {
       return err(new GeminiModelNotFoundError(modelName));
     }

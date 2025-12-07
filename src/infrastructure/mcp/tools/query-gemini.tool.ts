@@ -1,4 +1,5 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { DEFAULT_MODEL, MODEL_OPTIONS_DESCRIPTION } from '../../../config/index.js';
 
 export const queryGeminiTool: Tool = {
   name: 'query_gemini',
@@ -23,9 +24,8 @@ Streaming is enabled by default for better responsiveness.`,
       },
       model: {
         type: 'string',
-        description:
-          'The Gemini model to use. Options: gemini-1.5-pro (most capable), gemini-1.5-flash (faster), gemini-1.0-pro',
-        default: 'gemini-1.5-pro',
+        description: `The Gemini model to use. ${MODEL_OPTIONS_DESCRIPTION}`,
+        default: DEFAULT_MODEL,
       },
       systemInstruction: {
         type: 'string',

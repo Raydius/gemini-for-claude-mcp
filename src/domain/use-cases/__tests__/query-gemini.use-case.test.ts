@@ -4,6 +4,7 @@ import { QueryGeminiUseCase } from '../query-gemini.use-case.js';
 import type { IGeminiClient } from '../../ports/index.js';
 import { ValidationError } from '../../../shared/errors/index.js';
 import { GeminiApiError } from '../../errors/index.js';
+import { TEST_MODEL, TEST_MODEL_ALT } from '../../../config/models.config.test-utils.js';
 
 describe('QueryGeminiUseCase', () => {
   let mockGeminiClient: jest.Mocked<IGeminiClient>;
@@ -24,10 +25,10 @@ describe('QueryGeminiUseCase', () => {
 
   describe('execute', () => {
     it('should_returnSuccess_when_validPrompt', async () => {
-      const input = { prompt: 'Hello, Gemini!', model: 'gemini-1.5-pro' };
+      const input = { prompt: 'Hello, Gemini!', model: TEST_MODEL };
       const mockResponse = {
         text: 'Hello! How can I help you?',
-        model: 'gemini-1.5-pro',
+        model: TEST_MODEL,
         finishReason: 'STOP',
         usage: { promptTokens: 5, completionTokens: 7, totalTokens: 12 },
       };
@@ -43,7 +44,7 @@ describe('QueryGeminiUseCase', () => {
     });
 
     it('should_returnError_when_emptyPrompt', async () => {
-      const input = { prompt: '   ', model: 'gemini-1.5-pro' };
+      const input = { prompt: '   ', model: TEST_MODEL };
 
       const result = await useCase.execute(input);
 
@@ -55,7 +56,7 @@ describe('QueryGeminiUseCase', () => {
     });
 
     it('should_returnError_when_apiCallFails', async () => {
-      const input = { prompt: 'Hello', model: 'gemini-1.5-pro' };
+      const input = { prompt: 'Hello', model: TEST_MODEL };
       const apiError = new GeminiApiError('API unavailable');
       mockGeminiClient.generateContent.mockResolvedValue(err(apiError));
 
@@ -70,7 +71,7 @@ describe('QueryGeminiUseCase', () => {
     it('should_useHistoryMethod_when_historyProvided', async () => {
       const input = {
         prompt: 'And what about X?',
-        model: 'gemini-1.5-pro',
+        model: TEST_MODEL,
         history: [
           { role: 'user' as const, content: 'Hello' },
           { role: 'model' as const, content: 'Hi there!' },
@@ -78,7 +79,7 @@ describe('QueryGeminiUseCase', () => {
       };
       const mockResponse = {
         text: 'X is interesting.',
-        model: 'gemini-1.5-pro',
+        model: TEST_MODEL,
         finishReason: 'STOP',
         usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
       };
@@ -91,10 +92,10 @@ describe('QueryGeminiUseCase', () => {
     });
 
     it('should_useGenerateContent_when_noHistoryProvided', async () => {
-      const input = { prompt: 'Hello', model: 'gemini-1.5-pro' };
+      const input = { prompt: 'Hello', model: TEST_MODEL };
       const mockResponse = {
         text: 'Hi!',
-        model: 'gemini-1.5-pro',
+        model: TEST_MODEL,
         finishReason: 'STOP',
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
       };
@@ -109,14 +110,14 @@ describe('QueryGeminiUseCase', () => {
     it('should_passAllParametersToClient', async () => {
       const input = {
         prompt: 'Test',
-        model: 'gemini-1.5-flash',
+        model: TEST_MODEL_ALT,
         systemInstruction: 'Be helpful',
         temperature: 0.5,
         maxOutputTokens: 1000,
       };
       const mockResponse = {
         text: 'Response',
-        model: 'gemini-1.5-flash',
+        model: TEST_MODEL_ALT,
         finishReason: 'STOP',
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
       };
@@ -126,7 +127,7 @@ describe('QueryGeminiUseCase', () => {
 
       expect(mockGeminiClient.generateContent).toHaveBeenCalledWith({
         text: 'Test',
-        model: 'gemini-1.5-flash',
+        model: TEST_MODEL_ALT,
         systemInstruction: 'Be helpful',
         temperature: 0.5,
         maxOutputTokens: 1000,
