@@ -1,0 +1,232 @@
+import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
+import { type Result, ok, err } from 'neverthrow';
+import type { IGeminiClient } from '../../domain/ports/index.js';
+import type {
+  GeminiPrompt,
+  GeminiPromptWithHistory,
+  GeminiResponse,
+  GeminiStreamChunk,
+  TokenCountResult,
+  GeminiModel,
+} from '../../domain/entities/index.js';
+import type { DomainError } from '../../shared/errors/index.js';
+import { ExternalServiceError, TimeoutError } from '../../shared/errors/index.js';
+import {
+  GeminiApiError,
+  GeminiRateLimitError,
+  GeminiContentFilteredError,
+  GeminiModelNotFoundError,
+} from '../../domain/errors/index.js';
+import type { ILogger } from '../../shared/logger/index.js';
+
+const KNOWN_MODELS: readonly GeminiModel[] = [
+  {
+    name: 'gemini-1.5-pro',
+    displayName: 'Gemini 1.5 Pro',
+    description: 'Most capable model for complex reasoning tasks',
+    inputTokenLimit: 1048576,
+    outputTokenLimit: 8192,
+    supportedGenerationMethods: ['generateContent'],
+  },
+  {
+    name: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash',
+    description: 'Fast and efficient for most tasks',
+    inputTokenLimit: 1048576,
+    outputTokenLimit: 8192,
+    supportedGenerationMethods: ['generateContent'],
+  },
+  {
+    name: 'gemini-1.0-pro',
+    displayName: 'Gemini 1.0 Pro',
+    description: 'Balanced performance and capability',
+    inputTokenLimit: 30720,
+    outputTokenLimit: 2048,
+    supportedGenerationMethods: ['generateContent'],
+  },
+];
+
+export class GoogleGeminiClientAdapter implements IGeminiClient {
+  private readonly client: GoogleGenerativeAI;
+
+  constructor(
+    apiKey: string,
+    private readonly timeoutMs: number,
+    private readonly logger: ILogger,
+  ) {
+    this.client = new GoogleGenerativeAI(apiKey);
+  }
+
+  async generateContent(prompt: GeminiPrompt): Promise<Result<GeminiResponse, DomainError>> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const result = await this.withTimeout(model.generateContent(prompt.text), this.timeoutMs);
+      return ok(this.mapGenerateResponse(result, prompt.model));
+    } catch (error) {
+      return err(this.mapError(error));
+    }
+  }
+
+  async generateContentWithHistory(
+    prompt: GeminiPromptWithHistory,
+  ): Promise<Result<GeminiResponse, DomainError>> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const historyParam =
+        prompt.history !== undefined
+          ? {
+              history: prompt.history.map((msg) => ({
+                role: msg.role,
+                parts: [{ text: msg.content }],
+              })),
+            }
+          : {};
+      const chat = model.startChat(historyParam);
+      const result = await this.withTimeout(chat.sendMessage(prompt.text), this.timeoutMs);
+      return ok(this.mapGenerateResponse(result, prompt.model));
+    } catch (error) {
+      return err(this.mapError(error));
+    }
+  }
+
+  async *streamGenerateContent(
+    prompt: GeminiPrompt,
+  ): AsyncGenerator<Result<GeminiStreamChunk, DomainError>, void, unknown> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const result = await model.generateContentStream(prompt.text);
+
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        yield ok({ text, isComplete: false });
+      }
+      yield ok({ text: '', isComplete: true });
+    } catch (error) {
+      yield err(this.mapError(error));
+    }
+  }
+
+  async *streamGenerateContentWithHistory(
+    prompt: GeminiPromptWithHistory,
+  ): AsyncGenerator<Result<GeminiStreamChunk, DomainError>, void, unknown> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const historyParam =
+        prompt.history !== undefined
+          ? {
+              history: prompt.history.map((msg) => ({
+                role: msg.role,
+                parts: [{ text: msg.content }],
+              })),
+            }
+          : {};
+      const chat = model.startChat(historyParam);
+      const result = await chat.sendMessageStream(prompt.text);
+
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        yield ok({ text, isComplete: false });
+      }
+      yield ok({ text: '', isComplete: true });
+    } catch (error) {
+      yield err(this.mapError(error));
+    }
+  }
+
+  async countTokens(text: string, modelName: string): Promise<Result<TokenCountResult, DomainError>> {
+    try {
+      const model = this.client.getGenerativeModel({ model: modelName });
+      const result = await this.withTimeout(model.countTokens(text), this.timeoutMs);
+      return ok({ totalTokens: result.totalTokens, model: modelName });
+    } catch (error) {
+      return err(this.mapError(error));
+    }
+  }
+
+  async listModels(): Promise<Result<readonly GeminiModel[], DomainError>> {
+    return ok(KNOWN_MODELS);
+  }
+
+  async getModel(modelName: string): Promise<Result<GeminiModel, DomainError>> {
+    const model = KNOWN_MODELS.find((m) => m.name === modelName);
+    if (model === undefined) {
+      return err(new GeminiModelNotFoundError(modelName));
+    }
+    return ok(model);
+  }
+
+  private createModel(modelName: string, config: Partial<GeminiPrompt>): GenerativeModel {
+    const generationConfig: Record<string, number> = {};
+    if (config.temperature !== undefined) {
+      generationConfig['temperature'] = config.temperature;
+    }
+    if (config.maxOutputTokens !== undefined) {
+      generationConfig['maxOutputTokens'] = config.maxOutputTokens;
+    }
+    if (config.topP !== undefined) {
+      generationConfig['topP'] = config.topP;
+    }
+    if (config.topK !== undefined) {
+      generationConfig['topK'] = config.topK;
+    }
+
+    return this.client.getGenerativeModel({
+      model: modelName,
+      ...(config.systemInstruction !== undefined && {
+        systemInstruction: config.systemInstruction,
+      }),
+      ...(Object.keys(generationConfig).length > 0 && { generationConfig }),
+    });
+  }
+
+  private mapGenerateResponse(
+    result: { response: { text: () => string; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }; candidates?: Array<{ finishReason?: string }> } },
+    model: string,
+  ): GeminiResponse {
+    const response = result.response;
+    const usage = response.usageMetadata;
+    return {
+      text: response.text(),
+      model,
+      finishReason: response.candidates?.[0]?.finishReason ?? 'UNKNOWN',
+      usage: {
+        promptTokens: usage?.promptTokenCount ?? 0,
+        completionTokens: usage?.candidatesTokenCount ?? 0,
+        totalTokens: usage?.totalTokenCount ?? 0,
+      },
+    };
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('TIMEOUT'));
+      }, ms);
+    });
+    return Promise.race([promise, timeout]);
+  }
+
+  private mapError(error: unknown): DomainError {
+    if (error instanceof Error) {
+      if (error.message === 'TIMEOUT') {
+        return new TimeoutError('Request timed out', this.timeoutMs);
+      }
+
+      const message = error.message.toLowerCase();
+
+      if (message.includes('rate limit') || message.includes('429')) {
+        return new GeminiRateLimitError();
+      }
+      if (message.includes('not found') || message.includes('404')) {
+        return new GeminiModelNotFoundError('unknown');
+      }
+      if (message.includes('safety') || message.includes('blocked')) {
+        return new GeminiContentFilteredError();
+      }
+
+      this.logger.error('Gemini API error', { error: error.message });
+      return new GeminiApiError(error.message);
+    }
+    return new ExternalServiceError('Unknown error occurred', 'Gemini');
+  }
+}

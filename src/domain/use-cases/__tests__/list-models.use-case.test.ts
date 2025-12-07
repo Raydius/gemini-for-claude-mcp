@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { ok, err } from 'neverthrow';
+import { ListModelsUseCase } from '../list-models.use-case.js';
+import type { IGeminiClient } from '../../ports/index.js';
+import type { GeminiModel } from '../../entities/index.js';
+import { GeminiApiError } from '../../errors/index.js';
+
+describe('ListModelsUseCase', () => {
+  let mockGeminiClient: jest.Mocked<IGeminiClient>;
+  let useCase: ListModelsUseCase;
+
+  beforeEach(() => {
+    mockGeminiClient = {
+      generateContent: jest.fn(),
+      generateContentWithHistory: jest.fn(),
+      streamGenerateContent: jest.fn(),
+      streamGenerateContentWithHistory: jest.fn(),
+      countTokens: jest.fn(),
+      listModels: jest.fn(),
+      getModel: jest.fn(),
+    } as unknown as jest.Mocked<IGeminiClient>;
+    useCase = new ListModelsUseCase(mockGeminiClient);
+  });
+
+  describe('execute', () => {
+    it('should_returnSuccess_when_modelsAvailable', async () => {
+      const mockModels: readonly GeminiModel[] = [
+        {
+          name: 'gemini-1.5-pro',
+          displayName: 'Gemini 1.5 Pro',
+          description: 'Most capable model',
+          inputTokenLimit: 1048576,
+          outputTokenLimit: 8192,
+          supportedGenerationMethods: ['generateContent'],
+        },
+        {
+          name: 'gemini-1.5-flash',
+          displayName: 'Gemini 1.5 Flash',
+          description: 'Fast model',
+          inputTokenLimit: 1048576,
+          outputTokenLimit: 8192,
+          supportedGenerationMethods: ['generateContent'],
+        },
+      ];
+      mockGeminiClient.listModels.mockResolvedValue(ok(mockModels));
+
+      const result = await useCase.execute();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.count).toBe(2);
+        expect(result.value.models).toHaveLength(2);
+        expect(result.value.models[0]?.name).toBe('gemini-1.5-pro');
+      }
+    });
+
+    it('should_returnSummariesOnly', async () => {
+      const mockModels: readonly GeminiModel[] = [
+        {
+          name: 'gemini-1.5-pro',
+          displayName: 'Gemini 1.5 Pro',
+          description: 'Most capable model',
+          inputTokenLimit: 1048576,
+          outputTokenLimit: 8192,
+          supportedGenerationMethods: ['generateContent'],
+        },
+      ];
+      mockGeminiClient.listModels.mockResolvedValue(ok(mockModels));
+
+      const result = await useCase.execute();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const summary = result.value.models[0];
+        expect(summary).toEqual({
+          name: 'gemini-1.5-pro',
+          displayName: 'Gemini 1.5 Pro',
+          description: 'Most capable model',
+        });
+        // Should not include inputTokenLimit, outputTokenLimit, etc.
+        expect(summary).not.toHaveProperty('inputTokenLimit');
+      }
+    });
+
+    it('should_returnError_when_apiCallFails', async () => {
+      const apiError = new GeminiApiError('API unavailable');
+      mockGeminiClient.listModels.mockResolvedValue(err(apiError));
+
+      const result = await useCase.execute();
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.code).toBe('GEMINI_API_ERROR');
+      }
+    });
+
+    it('should_returnEmptyList_when_noModels', async () => {
+      mockGeminiClient.listModels.mockResolvedValue(ok([]));
+
+      const result = await useCase.execute();
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.count).toBe(0);
+        expect(result.value.models).toHaveLength(0);
+      }
+    });
+  });
+});

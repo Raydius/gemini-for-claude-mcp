@@ -1,0 +1,52 @@
+{
+  "name": "gemini-for-claude-mcp",
+  "version": "0.1.0",
+  "description": "MCP server bridging Gemini AI capabilities to Claude Code",
+  "type": "module",
+  "main": "dist/app.js",
+  "bin": {
+    "gemini-mcp": "./dist/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "tsx watch src/app.ts",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "gemini",
+    "claude",
+    "ai",
+    "model-context-protocol"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "neverthrow": "^7.0.0",
+    "pino": "^9.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "husky": "^9.0.0",
+    "jest": "^29.7.0",
+    "pino-pretty": "^11.0.0",
+    "ts-jest": "^29.2.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}
