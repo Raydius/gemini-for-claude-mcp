@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { DEFAULT_MODEL } from './models.config.js';
 
 const EnvSchema = z.object({
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  GEMINI_DEFAULT_MODEL: z.string().default(DEFAULT_MODEL),
-  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+  GEMINI_DEFAULT_MODEL: z.string().min(1, 'GEMINI_DEFAULT_MODEL is required'),
+  GEMINI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(65536),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

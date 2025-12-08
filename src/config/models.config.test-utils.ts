@@ -1,5 +1,5 @@
 import type { GeminiModel } from '../domain/entities/index.js';
-import { GEMINI_MODELS, DEFAULT_MODEL } from './models.config.js';
+import { GEMINI_MODELS } from './models.config.js';
 
 /**
  * Test utilities for model configuration.
@@ -7,13 +7,13 @@ import { GEMINI_MODELS, DEFAULT_MODEL } from './models.config.js';
  */
 
 // Re-export for tests - single import point
-export { GEMINI_MODELS, DEFAULT_MODEL };
+export { GEMINI_MODELS };
 
-/** Primary model for tests - uses the default */
-export const TEST_MODEL = DEFAULT_MODEL;
+/** Primary model for tests - hardcoded for test stability */
+export const TEST_MODEL = 'gemini-3-pro-preview';
 
 /** Alternative model for tests that need a different model */
-export const TEST_MODEL_ALT = GEMINI_MODELS[0]?.name ?? DEFAULT_MODEL;
+export const TEST_MODEL_ALT = GEMINI_MODELS[0]?.name ?? 'gemini-3-pro-preview';
 
 /** Get the first model from config (useful for mock data) */
 export const FIRST_MODEL = GEMINI_MODELS[0];

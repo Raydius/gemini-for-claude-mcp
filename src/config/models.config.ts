@@ -9,9 +9,6 @@ import type { GeminiModel } from '../domain/entities/index.js';
  * @see https://ai.google.dev/gemini-api/docs/models
  */
 
-/** Default model used when none is specified */
-export const DEFAULT_MODEL = 'gemini-2.5-flash';
-
 /**
  * Popular Gemini models shown in list_gemini_models.
  * NOTE: Any valid Gemini model works - this is not a validation list.

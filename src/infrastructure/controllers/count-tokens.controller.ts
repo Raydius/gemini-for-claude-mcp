@@ -1,5 +1,5 @@
 import type { CountTokensUseCase } from '../../domain/use-cases/index.js';
-import { CountTokensInputSchema, type CountTokensInputDto } from '../schemas/index.js';
+import { CountTokensInputSchema } from '../schemas/index.js';
 import {
   type McpToolResponse,
   successResponse,
@@ -11,22 +11,14 @@ export interface CountTokensResponseData {
   readonly model: string;
 }
 
-interface SchemaParser<T> {
-  safeParse(data: unknown): { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } };
-}
-
 export class CountTokensController {
-  private readonly schema: SchemaParser<CountTokensInputDto>;
-
   constructor(
     private readonly useCase: CountTokensUseCase,
-    schema?: SchemaParser<CountTokensInputDto>,
-  ) {
-    this.schema = schema ?? CountTokensInputSchema;
-  }
+    private readonly model: string,
+  ) {}
 
   async handle(rawInput: unknown): Promise<McpToolResponse<CountTokensResponseData>> {
-    const parsed = this.schema.safeParse(rawInput);
+    const parsed = CountTokensInputSchema.safeParse(rawInput);
 
     if (!parsed.success) {
       return errorResponse(
@@ -35,7 +27,11 @@ export class CountTokensController {
       );
     }
 
-    const result = await this.useCase.execute(parsed.data);
+    // Inject server-controlled model - client cannot influence this
+    const result = await this.useCase.execute({
+      ...parsed.data,
+      model: this.model,
+    });
 
     if (result.isErr()) {
       const error = result.error;
