@@ -1,5 +1,5 @@
 import type { QueryGeminiUseCase } from '../../domain/use-cases/index.js';
-import { QueryGeminiInputSchema } from '../schemas/index.js';
+import { QueryGeminiInputSchema, type QueryGeminiInputDto } from '../schemas/index.js';
 import {
   type McpToolResponse,
   successResponse,
@@ -18,11 +18,22 @@ export interface QueryGeminiResponseData {
   };
 }
 
+interface SchemaParser<T> {
+  safeParse(data: unknown): { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } };
+}
+
 export class QueryGeminiController {
-  constructor(private readonly useCase: QueryGeminiUseCase) {}
+  private readonly schema: SchemaParser<QueryGeminiInputDto>;
+
+  constructor(
+    private readonly useCase: QueryGeminiUseCase,
+    schema?: SchemaParser<QueryGeminiInputDto>,
+  ) {
+    this.schema = schema ?? QueryGeminiInputSchema;
+  }
 
   async handle(rawInput: unknown): Promise<McpToolResponse<QueryGeminiResponseData>> {
-    const parsed = QueryGeminiInputSchema.safeParse(rawInput);
+    const parsed = this.schema.safeParse(rawInput);
 
     if (!parsed.success) {
       return errorResponse(
@@ -44,7 +55,7 @@ export class QueryGeminiController {
   async *handleStream(
     rawInput: unknown,
   ): AsyncGenerator<McpToolResponse<GeminiStreamChunk>, void, unknown> {
-    const parsed = QueryGeminiInputSchema.safeParse(rawInput);
+    const parsed = this.schema.safeParse(rawInput);
 
     if (!parsed.success) {
       yield errorResponse(

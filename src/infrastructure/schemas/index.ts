@@ -1,2 +1,10 @@
-export { QueryGeminiInputSchema, type QueryGeminiInputDto } from './query-gemini.schema.js';
-export { CountTokensInputSchema, type CountTokensInputDto } from './count-tokens.schema.js';
+export {
+  QueryGeminiInputSchema,
+  createQueryGeminiInputSchema,
+  type QueryGeminiInputDto,
+} from './query-gemini.schema.js';
+export {
+  CountTokensInputSchema,
+  createCountTokensInputSchema,
+  type CountTokensInputDto,
+} from './count-tokens.schema.js';

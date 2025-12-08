@@ -12,6 +12,10 @@ import {
   CountTokensController,
 } from './infrastructure/controllers/index.js';
 import {
+  createQueryGeminiInputSchema,
+  createCountTokensInputSchema,
+} from './infrastructure/schemas/index.js';
+import {
   ToolRegistry,
   McpServer,
   queryGeminiTool,
@@ -23,6 +27,25 @@ async function main(): Promise<void> {
   // Load and validate configuration
   const config = loadConfig();
   const logger = createLogger(config.LOG_LEVEL);
+
+  // Override tool schema defaults with environment-configured default model
+  const modelSchema = queryGeminiTool.inputSchema.properties as Record<
+    string,
+    { default?: string }
+  >;
+  const queryModelProp = modelSchema['model'];
+  if (queryModelProp) {
+    queryModelProp.default = config.GEMINI_DEFAULT_MODEL;
+  }
+
+  const countTokensModelSchema = countTokensTool.inputSchema.properties as Record<
+    string,
+    { default?: string }
+  >;
+  const countTokensModelProp = countTokensModelSchema['model'];
+  if (countTokensModelProp) {
+    countTokensModelProp.default = config.GEMINI_DEFAULT_MODEL;
+  }
 
   logger.info('Starting Gemini MCP Server', { nodeEnv: config.NODE_ENV });
 
@@ -38,10 +61,14 @@ async function main(): Promise<void> {
   const listModelsUseCase = new ListModelsUseCase(geminiClient);
   const countTokensUseCase = new CountTokensUseCase(geminiClient);
 
-  // Create controllers
-  const queryGeminiController = new QueryGeminiController(queryGeminiUseCase);
+  // Create config-aware validation schemas
+  const queryGeminiSchema = createQueryGeminiInputSchema(config.GEMINI_DEFAULT_MODEL);
+  const countTokensSchema = createCountTokensInputSchema(config.GEMINI_DEFAULT_MODEL);
+
+  // Create controllers with config-aware schemas
+  const queryGeminiController = new QueryGeminiController(queryGeminiUseCase, queryGeminiSchema);
   const listModelsController = new ListModelsController(listModelsUseCase);
-  const countTokensController = new CountTokensController(countTokensUseCase);
+  const countTokensController = new CountTokensController(countTokensUseCase, countTokensSchema);
 
   // Register tools
   const toolRegistry = new ToolRegistry();
