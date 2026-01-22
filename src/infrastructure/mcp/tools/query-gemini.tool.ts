@@ -1,5 +1,4 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { DEFAULT_MODEL, MODEL_OPTIONS_DESCRIPTION } from '../../../config/index.js';
 
 export const queryGeminiTool: Tool = {
   name: 'query_gemini',
@@ -21,28 +20,6 @@ Streaming is enabled by default for better responsiveness.`,
         description: 'The prompt to send to Gemini. Be specific and clear.',
         minLength: 1,
         maxLength: 100000,
-      },
-      model: {
-        type: 'string',
-        description: `The Gemini model to use. ${MODEL_OPTIONS_DESCRIPTION}`,
-        default: DEFAULT_MODEL,
-      },
-      systemInstruction: {
-        type: 'string',
-        description: 'System instruction to set the behavior and persona of the model',
-        maxLength: 10000,
-      },
-      temperature: {
-        type: 'number',
-        description: 'Controls randomness. 0 = deterministic, 2 = most random. Default: 1.0',
-        minimum: 0,
-        maximum: 2,
-      },
-      maxOutputTokens: {
-        type: 'number',
-        description: 'Maximum tokens in the response. Default varies by model.',
-        minimum: 1,
-        maximum: 8192,
       },
       history: {
         type: 'array',

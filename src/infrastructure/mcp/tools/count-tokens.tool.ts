@@ -1,9 +1,8 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { DEFAULT_MODEL, MODEL_OPTIONS_DESCRIPTION } from '../../../config/index.js';
 
 export const countTokensTool: Tool = {
   name: 'count_gemini_tokens',
-  description: `Count the number of tokens in a text string for a specific Gemini model.
+  description: `Count the number of tokens in a text string for the configured Gemini model.
 
 Use this tool to:
 - Estimate prompt costs before making queries
@@ -17,11 +16,6 @@ Use this tool to:
         description: 'The text to count tokens for',
         minLength: 1,
         maxLength: 1000000,
-      },
-      model: {
-        type: 'string',
-        description: `The model to use for tokenization. ${MODEL_OPTIONS_DESCRIPTION}`,
-        default: DEFAULT_MODEL,
       },
     },
     required: ['text'],

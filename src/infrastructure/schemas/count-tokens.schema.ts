@@ -1,21 +1,14 @@
 import { z } from 'zod';
-import { DEFAULT_MODEL } from '../../config/index.js';
 
 /**
- * Factory function to create CountTokensInputSchema with configurable default model.
- * Use this when you need to inject the default model from environment config.
+ * Schema for count_gemini_tokens tool input.
+ * Model is NOT accepted from client - it's injected server-side from GEMINI_DEFAULT_MODEL.
  */
-export function createCountTokensInputSchema(defaultModel: string): z.ZodObject<{
-  text: z.ZodString;
-  model: z.ZodDefault<z.ZodString>;
-}> {
-  return z.object({
-    text: z.string().min(1, 'Text is required').max(1000000),
-    model: z.string().default(defaultModel),
-  });
+export const CountTokensInputSchema = z.object({
+  text: z.string().min(1, 'Text is required').max(1000000),
+});
+
+/** Type for CountTokensInput - model is NOT included, injected server-side */
+export interface CountTokensInputDto {
+  readonly text: string;
 }
-
-/** Static schema using hardcoded DEFAULT_MODEL - prefer createCountTokensInputSchema for runtime config */
-export const CountTokensInputSchema = createCountTokensInputSchema(DEFAULT_MODEL);
-
-export type CountTokensInputDto = z.infer<typeof CountTokensInputSchema>;

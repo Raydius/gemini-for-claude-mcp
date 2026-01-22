@@ -1,5 +1,5 @@
 import type { QueryGeminiUseCase } from '../../domain/use-cases/index.js';
-import { QueryGeminiInputSchema, type QueryGeminiInputDto } from '../schemas/index.js';
+import { QueryGeminiInputSchema } from '../schemas/index.js';
 import {
   type McpToolResponse,
   successResponse,
@@ -18,22 +18,15 @@ export interface QueryGeminiResponseData {
   };
 }
 
-interface SchemaParser<T> {
-  safeParse(data: unknown): { success: true; data: T } | { success: false; error: { issues: Array<{ message: string }> } };
-}
-
 export class QueryGeminiController {
-  private readonly schema: SchemaParser<QueryGeminiInputDto>;
-
   constructor(
     private readonly useCase: QueryGeminiUseCase,
-    schema?: SchemaParser<QueryGeminiInputDto>,
-  ) {
-    this.schema = schema ?? QueryGeminiInputSchema;
-  }
+    private readonly model: string,
+    private readonly maxOutputTokens: number,
+  ) {}
 
   async handle(rawInput: unknown): Promise<McpToolResponse<QueryGeminiResponseData>> {
-    const parsed = this.schema.safeParse(rawInput);
+    const parsed = QueryGeminiInputSchema.safeParse(rawInput);
 
     if (!parsed.success) {
       return errorResponse(
@@ -42,7 +35,12 @@ export class QueryGeminiController {
       );
     }
 
-    const result = await this.useCase.execute(parsed.data);
+    // Inject server-controlled params - client cannot influence these
+    const result = await this.useCase.execute({
+      ...parsed.data,
+      model: this.model,
+      maxOutputTokens: this.maxOutputTokens,
+    });
 
     if (result.isErr()) {
       const error = result.error;
@@ -55,7 +53,7 @@ export class QueryGeminiController {
   async *handleStream(
     rawInput: unknown,
   ): AsyncGenerator<McpToolResponse<GeminiStreamChunk>, void, unknown> {
-    const parsed = this.schema.safeParse(rawInput);
+    const parsed = QueryGeminiInputSchema.safeParse(rawInput);
 
     if (!parsed.success) {
       yield errorResponse(
@@ -65,7 +63,12 @@ export class QueryGeminiController {
       return;
     }
 
-    for await (const chunk of this.useCase.executeStream(parsed.data)) {
+    // Inject server-controlled params - client cannot influence these
+    for await (const chunk of this.useCase.executeStream({
+      ...parsed.data,
+      model: this.model,
+      maxOutputTokens: this.maxOutputTokens,
+    })) {
       if (chunk.isErr()) {
         yield errorResponse(chunk.error.code, chunk.error.message);
         return;

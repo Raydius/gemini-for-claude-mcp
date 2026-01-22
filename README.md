@@ -32,21 +32,19 @@ Give Claude Code access to Google's Gemini AI models. Get second opinions, compa
 
 ```bash
 # 1. Clone and build
-git clone https://github.com/your-username/gemini-for-claude-mcp.git
+git clone https://github.com/Raydius/gemini-for-claude-mcp.git
 cd gemini-for-claude-mcp
 npm install && npm run build
 
 # 2. Add to Claude Code (replace with your actual path and API key)
-claude mcp add gemini -e GEMINI_API_KEY=your-api-key -- node $(pwd)/dist/app.js
+claude mcp add gemini -e GEMINI_API_KEY=your-api-key -e GEMINI_DEFAULT_MODEL=gemini-3-pro-preview -- node $(pwd)/dist/app.js
 
 # 3. Start Claude Code and try it out
 claude
 ```
 
 Then ask Claude:
-> "Query gemini-3-pro-preview: Explain the tradeoffs between microservices and monoliths"
-
-**Any Gemini model works.** Popular: `gemini-3-pro-preview`, `gemini-2.5-pro`, `gemini-2.5-flash` (default). See [all models](https://ai.google.dev/gemini-api/docs/models).
+> "Ask Gemini to explain the tradeoffs between microservices and monoliths"
 
 ---
 
@@ -55,9 +53,8 @@ Then ask Claude:
 - **Built for Claude Code** - Seamlessly integrates with your Claude Code workflow
 - **Streaming Responses** - Enabled by default for real-time output
 - **Multi-turn Conversations** - Maintain context across multiple Gemini queries
-- **Any Gemini Model** - Use any model including gemini-3-pro-preview, gemini-2.5-pro, and more
+- **Configurable Model** - Set your preferred Gemini model via environment variable
 - **Token Counting** - Estimate costs before making queries
-- **Configurable** - Customize temperature, max tokens, system instructions
 - **Type-Safe** - Built with strict TypeScript
 - **Well-Tested** - 100% domain layer test coverage
 
@@ -76,7 +73,7 @@ Then ask Claude:
 ### Step 1: Clone and Build
 
 ```bash
-git clone https://github.com/your-username/gemini-for-claude-mcp.git
+git clone https://github.com/Raydius/gemini-for-claude-mcp.git
 cd gemini-for-claude-mcp
 npm install
 npm run build
@@ -87,10 +84,7 @@ npm run build
 **Option A: Using the CLI (Recommended)**
 
 ```bash
-# Basic setup (uses gemini-2.5-flash by default)
-claude mcp add gemini -e GEMINI_API_KEY=your-api-key -- node /absolute/path/to/gemini-for-claude-mcp/dist/app.js
-
-# Or set a different default model (any Gemini model works)
+# Basic setup (substitute default model for any valid Gemini model designation string)
 claude mcp add gemini \
   -e GEMINI_API_KEY=your-api-key \
   -e GEMINI_DEFAULT_MODEL=gemini-3-pro-preview \
@@ -109,14 +103,14 @@ Edit your Claude Code settings file (`~/.claude.json`):
       "args": ["/absolute/path/to/gemini-for-claude-mcp/dist/app.js"],
       "env": {
         "GEMINI_API_KEY": "your-api-key-here",
-        "GEMINI_DEFAULT_MODEL": "gemini-3-pro-preview"
+        "GEMINI_DEFAULT_MODEL": "gemini-2.5-flash"
       }
     }
   }
 }
 ```
 
-**Any Gemini model works.** Popular: `gemini-3-pro-preview` (latest), `gemini-2.5-pro`, `gemini-2.5-flash` (default). See [all models](https://ai.google.dev/gemini-api/docs/models).
+See [Configuration](#configuration) for all available options and [supported models](https://ai.google.dev/gemini-api/docs/models).
 
 ### Step 3: Verify Installation
 
@@ -137,20 +131,6 @@ If configured correctly, Claude will use the `list_gemini_models` tool and show 
 
 Once installed, you can ask Claude to use Gemini in natural language. Here are some examples:
 
-### Specifying a Model
-
-**Any Gemini model works** - just include the model name in your query:
-
-```
-You: Ask gemini-3-pro-preview to review this algorithm for edge cases.
-
-You: Use gemini-2.5-flash to quickly summarize this document.
-
-You: Query gemini-2.5-pro about distributed systems design.
-```
-
-If you don't specify a model, it uses your configured default (`gemini-2.5-flash` unless you set `GEMINI_DEFAULT_MODEL`). See [all models](https://ai.google.dev/gemini-api/docs/models).
-
 ### Get a Second Opinion
 
 ```
@@ -167,10 +147,10 @@ Gemini suggests using a token bucket algorithm. Here's the comparison:
 ### Compare Solutions
 
 ```
-You: Here's my sorting algorithm. Have gemini-3-pro-preview review it and compare approaches.
+You: Here's my sorting algorithm. Have Gemini review it and compare approaches.
 
-Claude: Let me get Gemini 3 Pro's analysis of your sorting implementation...
-[Uses query_gemini tool with model: gemini-3-pro-preview]
+Claude: Let me get Gemini's analysis of your sorting implementation...
+[Uses query_gemini tool]
 
 Gemini's feedback: ...
 ```
@@ -178,21 +158,21 @@ Gemini's feedback: ...
 ### Leverage Gemini's Strengths
 
 ```
-You: Ask gemini-3-pro-preview to analyze this mathematical proof for logical errors.
+You: Ask Gemini to analyze this mathematical proof for logical errors.
 
-Claude: I'll have Gemini 3 Pro examine the proof...
-[Uses query_gemini tool with model: gemini-3-pro-preview]
+Claude: I'll have Gemini examine the proof...
+[Uses query_gemini tool]
 ```
 
 ### Check Token Usage Before Querying
 
 ```
-You: How many tokens would this prompt use with gemini-3-pro-preview?
+You: How many tokens would this prompt use with Gemini?
 
-Claude: Let me count the tokens for Gemini 3 Pro...
-[Uses count_gemini_tokens tool with model: gemini-3-pro-preview]
+Claude: Let me count the tokens...
+[Uses count_gemini_tokens tool]
 
-This text would use approximately 1,250 tokens with gemini-3-pro-preview.
+This text would use approximately 1,250 tokens.
 ```
 
 ### Multi-turn Conversations
@@ -218,9 +198,8 @@ Configure the server using environment variables:
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GEMINI_API_KEY` | Yes | - | Your Gemini API key from Google AI Studio |
-| `NODE_ENV` | No | `development` | Environment mode (`development`, `production`, `test`) |
-| `GEMINI_DEFAULT_MODEL` | No | `gemini-2.5-flash` | Default model for queries |
-| `GEMINI_TIMEOUT_MS` | No | `30000` | Request timeout in milliseconds |
+| `GEMINI_DEFAULT_MODEL` | Yes | - | Gemini model to use for queries |
+| `GEMINI_TIMEOUT_MS` | No | `120000` | Request timeout in milliseconds |
 | `LOG_LEVEL` | No | `info` | Log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`) |
 
 ---
@@ -243,7 +222,8 @@ Add to your Claude Desktop configuration:
       "command": "node",
       "args": ["/absolute/path/to/gemini-for-claude-mcp/dist/app.js"],
       "env": {
-        "GEMINI_API_KEY": "your-api-key-here"
+        "GEMINI_API_KEY": "your-api-key-here",
+		"GEMINI_DEFAULT_MODEL": "gemini-2.5-flash"
       }
     }
   }
@@ -255,7 +235,7 @@ Add to your Claude Desktop configuration:
 This server uses stdio transport. Start it with:
 
 ```bash
-GEMINI_API_KEY=your-key node dist/app.js
+GEMINI_API_KEY=your-key GEMINI_DEFAULT_MODEL=gemini-2.5-flash node dist/app.js
 ```
 
 The server communicates via stdin/stdout using the MCP protocol.
@@ -304,17 +284,13 @@ Technical details for developers integrating with or extending the MCP tools.
 
 ### query_gemini
 
-Query Google's Gemini AI models for text generation, reasoning, and analysis tasks.
+Query Google's Gemini AI models for text generation, reasoning, and analysis tasks. The model is configured via the `GEMINI_DEFAULT_MODEL` environment variable.
 
 **Parameters:**
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `prompt` | string | Yes | - | The prompt to send to Gemini (1-100,000 chars) |
-| `model` | string | No | `gemini-2.5-flash` | Any Gemini model. See [all models](https://ai.google.dev/gemini-api/docs/models) |
-| `systemInstruction` | string | No | - | System instruction to set model behavior (max 10,000 chars) |
-| `temperature` | number | No | `1.0` | Randomness: 0 = deterministic, 2 = most random |
-| `maxOutputTokens` | number | No | varies | Maximum tokens in response (1-8,192) |
 | `history` | array | No | - | Previous conversation turns for multi-turn conversations |
 | `stream` | boolean | No | `true` | Stream response progressively |
 
@@ -349,7 +325,7 @@ Query Google's Gemini AI models for text generation, reasoning, and analysis tas
 
 ### list_gemini_models
 
-List popular Gemini AI models. Note: Any valid Gemini model can be used in queries, not just those listed here.
+List popular Gemini AI models that can be configured via the `GEMINI_DEFAULT_MODEL` environment variable.
 
 **Parameters:** None
 
@@ -390,14 +366,13 @@ List popular Gemini AI models. Note: Any valid Gemini model can be used in queri
 
 ### count_gemini_tokens
 
-Count the number of tokens in a text string for a specific Gemini model.
+Count the number of tokens in a text string for the configured Gemini model.
 
 **Parameters:**
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `text` | string | Yes | - | The text to count tokens for (1-1,000,000 chars) |
-| `model` | string | No | `gemini-2.5-flash` | Any Gemini model. See [all models](https://ai.google.dev/gemini-api/docs/models) |
 
 **Example Response:**
 

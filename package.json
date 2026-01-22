@@ -1,6 +1,6 @@
 {
   "name": "gemini-for-claude-mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "MCP server bridging Gemini AI capabilities to Claude Code",
   "type": "module",
   "main": "dist/app.js",
@@ -28,7 +28,7 @@
     "ai",
     "model-context-protocol"
   ],
-  "author": "",
+  "author": "Ray Dollete <ray@raydollete.com>",
   "license": "Apache-2.0",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
