@@ -63,6 +63,46 @@ export class GoogleGeminiClientAdapter implements IGeminiClient {
     }
   }
 
+  async generateContentViaStream(
+    prompt: GeminiPrompt,
+  ): Promise<Result<GeminiResponse, DomainError>> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const streamResult = await this.withTimeout(
+        model.generateContentStream(prompt.text),
+        this.timeoutMs,
+      );
+      return ok(await this.consumeStreamAndMapResponse(streamResult, prompt.model));
+    } catch (error) {
+      return err(this.mapError(error));
+    }
+  }
+
+  async generateContentWithHistoryViaStream(
+    prompt: GeminiPromptWithHistory,
+  ): Promise<Result<GeminiResponse, DomainError>> {
+    try {
+      const model = this.createModel(prompt.model, prompt);
+      const historyParam =
+        prompt.history !== undefined
+          ? {
+              history: prompt.history.map((msg) => ({
+                role: msg.role,
+                parts: [{ text: msg.content }],
+              })),
+            }
+          : {};
+      const chat = model.startChat(historyParam);
+      const streamResult = await this.withTimeout(
+        chat.sendMessageStream(prompt.text),
+        this.timeoutMs,
+      );
+      return ok(await this.consumeStreamAndMapResponse(streamResult, prompt.model));
+    } catch (error) {
+      return err(this.mapError(error));
+    }
+  }
+
   async *streamGenerateContent(
     prompt: GeminiPrompt,
   ): AsyncGenerator<Result<GeminiStreamChunk, DomainError>, void, unknown> {
@@ -169,6 +209,30 @@ export class GoogleGeminiClientAdapter implements IGeminiClient {
         totalTokens: usage?.totalTokenCount ?? 0,
       },
     };
+  }
+
+  private async consumeStreamAndMapResponse(
+    streamResult: {
+      stream: AsyncIterable<{ text: () => string }>;
+      response: Promise<{
+        text: () => string;
+        usageMetadata?: {
+          promptTokenCount?: number;
+          candidatesTokenCount?: number;
+          totalTokenCount?: number;
+        };
+        candidates?: Array<{ finishReason?: string }>;
+      }>;
+    },
+    model: string,
+  ): Promise<GeminiResponse> {
+    // Consuming chunks keeps the connection alive, preventing timeout.
+    // The aggregated response below contains the full text and metadata.
+    for await (const chunk of streamResult.stream) {
+      void chunk.text();
+    }
+    const finalResponse = await streamResult.response;
+    return this.mapGenerateResponse({ response: finalResponse }, model);
   }
 
   private async withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {

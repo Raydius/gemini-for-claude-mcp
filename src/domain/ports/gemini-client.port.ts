@@ -16,6 +16,14 @@ export interface IGeminiClient {
     prompt: GeminiPromptWithHistory,
   ): Promise<Result<GeminiResponse, DomainError>>;
 
+  generateContentViaStream(
+    prompt: GeminiPrompt,
+  ): Promise<Result<GeminiResponse, DomainError>>;
+
+  generateContentWithHistoryViaStream(
+    prompt: GeminiPromptWithHistory,
+  ): Promise<Result<GeminiResponse, DomainError>>;
+
   streamGenerateContent(
     prompt: GeminiPrompt,
   ): AsyncGenerator<Result<GeminiStreamChunk, DomainError>, void, unknown>;

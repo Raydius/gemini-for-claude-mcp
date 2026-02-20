@@ -41,9 +41,15 @@ export class QueryGeminiUseCase {
     const prompt = this.buildPrompt(input);
     const hasHistory = input.history !== undefined && input.history.length > 0;
 
+    const useStreaming = input.stream !== false;
+
     const result = hasHistory
-      ? await this.geminiClient.generateContentWithHistory(prompt)
-      : await this.geminiClient.generateContent(prompt);
+      ? useStreaming
+        ? await this.geminiClient.generateContentWithHistoryViaStream(prompt)
+        : await this.geminiClient.generateContentWithHistory(prompt)
+      : useStreaming
+        ? await this.geminiClient.generateContentViaStream(prompt)
+        : await this.geminiClient.generateContent(prompt);
 
     if (result.isErr()) {
       return err(result.error);

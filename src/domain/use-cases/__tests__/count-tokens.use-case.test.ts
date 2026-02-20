@@ -14,6 +14,8 @@ describe('CountTokensUseCase', () => {
     mockGeminiClient = {
       generateContent: jest.fn(),
       generateContentWithHistory: jest.fn(),
+      generateContentViaStream: jest.fn(),
+      generateContentWithHistoryViaStream: jest.fn(),
       streamGenerateContent: jest.fn(),
       streamGenerateContentWithHistory: jest.fn(),
       countTokens: jest.fn(),

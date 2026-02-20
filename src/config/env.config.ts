@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   GEMINI_DEFAULT_MODEL: z.string().min(1, 'GEMINI_DEFAULT_MODEL is required'),
   GEMINI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(65536),
-  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(300000),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
